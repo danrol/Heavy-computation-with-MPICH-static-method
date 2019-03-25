@@ -6,6 +6,7 @@
 #include <string.h>
 #define HEAVY 100000
 #define MASTER_ID 0
+#define N 20
 
 double heavy(int x, int y) {
 	int i, loop = 1;
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
 {
 
 	int numprocs, myid;
-	int i = 0, N = 20;
+	int i = 0;
 
 
 	int *my_x, *my_y;
@@ -61,8 +62,8 @@ int main(int argc, char *argv[])
 
 		weight_per_process = (int*)calloc(numprocs, sizeof(int));
 		actual_number_of_x_y_per_proc = (int*)calloc(numprocs, sizeof(int));
-		x_per_proc = (int**)malloc(numprocs * sizeof(int *));
-		y_per_proc = (int**)malloc(numprocs * sizeof(int *));
+		x_per_proc = (int **)malloc(numprocs * sizeof(int *));
+		y_per_proc = (int **)malloc(numprocs * sizeof(int *));
 
 		t1 = MPI_Wtime();
 
@@ -79,7 +80,6 @@ int main(int argc, char *argv[])
 			{
 				id_of_min_weight = find_proc_with_min_weight(weight_per_process, numprocs);
 				x_y_col = actual_number_of_x_y_per_proc[id_of_min_weight];
-
 				x_per_proc[id_of_min_weight][x_y_col] = x;
 				y_per_proc[id_of_min_weight][x_y_col] = y;
 				actual_number_of_x_y_per_proc[id_of_min_weight] += 1;
@@ -104,27 +104,27 @@ int main(int argc, char *argv[])
 		//for (i = 0; i < numprocs; i++)
 		//	printf("\nfor id = %d, weight of tasks =  %d, actual_number_of_x_y_per_proc = %d", i, weight_per_process[i], actual_number_of_x_y_per_proc[i]);
 
-		//defines tasks for master so master will perform his tasks with slaves on the same line (outside from if-else)
-		my_num_of_x_y = actual_number_of_x_y_per_proc[MASTER_ID]; //TBD
-																  //my_x = (int*)malloc(my_num_of_x_y * sizeof(int));
+		my_num_of_x_y = actual_number_of_x_y_per_proc[MASTER_ID];
+		my_x = (int*)malloc(my_num_of_x_y * sizeof(int));
 		my_x = x_per_proc[MASTER_ID];
-		//my_y = (int*)malloc(my_num_of_x_y * sizeof(int));
+		my_y = (int*)malloc(my_num_of_x_y * sizeof(int));
 		my_y = y_per_proc[MASTER_ID];
 	}
 	else
 	{
 		MPI_Recv(&my_num_of_x_y, 1, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		my_x = 0;
+		my_x = (int*)malloc(my_num_of_x_y * sizeof(int));
 		MPI_Recv(my_x, my_num_of_x_y, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		my_y = 0;
+		my_y = (int*)malloc(my_num_of_x_y * sizeof(int));
 		MPI_Recv(my_y, my_num_of_x_y, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
 	}
 
-	printf("\n\nmyid = %d", myid);
-	for (i = 0; i < my_num_of_x_y; i++)
-	{
-		printf("\nx = %d, y = %d", my_x[i], my_y[i]);
-	}
+	//printf("\n\nmyid = %d", myid);
+	//for (i = 0; i < my_num_of_x_y; i++)
+	//{
+	//	printf("\nx = %d, y = %d", my_x[i], my_y[i]);
+	//}
 
 
 	for (i = 0; i < my_num_of_x_y; i++)
@@ -134,6 +134,8 @@ int main(int argc, char *argv[])
 
 	//MPI_Barrier(MPI_COMM_WORLD);
 	//printf("\nmy id = %d, my_num_of_x_y = %d, my answer = %e", myid, my_num_of_x_y, answer);
+
+
 
 	if (myid == MASTER_ID)
 	{
@@ -152,7 +154,6 @@ int main(int argc, char *argv[])
 		MPI_Send(&answer, 1, MPI_DOUBLE, MASTER_ID, 0, MPI_COMM_WORLD);
 	}
 
-	//TBD add free
 	MPI_Finalize();
 	return 0;
 }
